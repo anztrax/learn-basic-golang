@@ -181,19 +181,19 @@ type Vertex2 struct{
 
 func testComplexDataType(){
 	fmt.Println("=================");
-	//zero based value pointer is <nil>
+	//zero based value  is <nil>
 	var p * int;
 	i := 42;
 	p = &i;
-	fmt.Println("pointer based value : ",i, *p);
+	fmt.Println(" based value : ",i, *p);
 	*p = 100;
-	fmt.Println("pointer based value : ",i, *p)
+	fmt.Println(" based value : ",i, *p)
 
 	//struct here
 	vertex1 := Vertex{1,2};
 	pointerToVertex := &vertex1;
 	fmt.Println(vertex1, vertex1.X, vertex1.Y);
-	fmt.Println("access throught pointer Vertex y , x =",pointerToVertex.Y,pointerToVertex.X);
+	fmt.Println("access throught  Vertex y , x =",pointerToVertex.Y,pointerToVertex.X);
 
 	vertex2_1 := Vertex2{X : 10};	//Y:0 is implicit
 	vertex2_2 := Vertex2{Y : 10};
@@ -431,10 +431,241 @@ func printSlice(s []int){
 	fmt.Printf("len=%d cap=%d %v\n",len(s),cap(s),s);
 }
 
+/**
+	land of method and interfaces
+ */
+type Person struct{		//the type is struct
+	name string
+	age int
+}
+//why is this called method : because it has special receiver argument.
+func(p Person)getName()string{
+	return p.name;
+}
+
+type MyFloat float64;
+func(f MyFloat)Abs()float64{
+	if f < 0{
+		return float64(-f);
+	}
+	return float64(f);
+}
+
+type SimpleVertex struct{
+	X, Y float64;
+}
+func(v *SimpleVertex)Abs()float64{
+	return math.Sqrt(v.X * v.X + v.Y* v.Y);
+}
+
+func(v *SimpleVertex)Scale(f float64){
+	v.X = v.X * f;
+	v.Y = v.Y * f;
+}
+func scaleFunc(v *SimpleVertex, f float64){
+	v.X = v.X * f;
+	v.Y = v.Y * f;
+}
+
+type SimpleInterface interface {
+	aFunction()
+}
+
+type SimpleStruct struct {
+	simpleString string;
+}
+
+// This method means type T implements the interface I,
+// but we don't need to explicitly declare that it does so.
+func(simpleStruct SimpleStruct)aFunction(){
+	fmt.Println(simpleStruct.simpleString);
+}
+
+type geometry interface{
+	area() float64;
+	perim() float64;
+}
+
+type rect struct{
+	width, height float64;
+}
+
+type circle struct{
+	radius float64;
+}
+
+func(r rect)area()float64{
+	return r.width * r.height;
+}
+func(r rect)perim()float64{
+	return r.width * r.height;
+}
+func(c circle)area() float64{
+	return math.Pi * c.radius * c.radius
+}
+func(c circle)perim()float64{
+	return 2 * math.Pi * c.radius;
+}
+
+func measure(g geometry){
+	fmt.Println("geometry value : ",g);
+	fmt.Printf("%v %T\n",g,g);
+	fmt.Println(g.area());
+	fmt.Println(g.perim());
+}
+
+type simpleInterface2 interface{
+	aFunc()
+}
+
+type simpleStruct2 struct {
+	aString string;
+}
+
+type TryEmptyInterface interface{
+	EmptyInterfacefunc()
+}
+
+func(simpleClass2 *simpleStruct2)aFunc(){
+	if simpleClass2 == nil{
+		fmt.Println("<nil>");
+		return;
+	}
+	fmt.Println(simpleClass2.aString);
+}
+
+func describeSimpleInterface2(i simpleInterface2){
+	fmt.Printf("(%v %T)\n",i,i);
+}
+
+func testMethodAndInterfaces(){
+	fmt.Println("================================")
+	person1 := Person{"anon1",25};
+	fmt.Println("person1 :",person1, " name of person1 :",person1.getName());
+
+	/**
+		IMPORTANT NOTE :
+		https://tour.golang.org/methods/3
+	*/
+	customFloat1 := MyFloat(-math.Sqrt2);
+	fmt.Println("customFloat1 : ",customFloat1.Abs());
+
+	simpleVertex1 := SimpleVertex{3,4};
+	simpleVertex1.Scale(10);
+	fmt.Println("simple vertex 1 : ",simpleVertex1.Abs());
+
+	//instantiate by refences
+	simpleVertex2 := &SimpleVertex{3,4};
+	scaleFunc(simpleVertex2,10);
+	fmt.Println("simple vertex 2 : ",simpleVertex2.Abs());
+
+	var simpleStruct1 SimpleInterface = SimpleStruct{"Hello There"};
+	simpleStruct1.aFunction();
+
+	rect1 := rect{10,10};
+	circle1 := circle{10};
+	measure(rect1);
+	measure(circle1);
+
+	var simpleInterface2Obj simpleInterface2;
+	var simpleStruct2Obj *simpleStruct2;
+	simpleInterface2Obj = simpleStruct2Obj;
+	simpleInterface2Obj.aFunc();
+	describeSimpleInterface2(simpleInterface2Obj);
+
+	simpleInterface2Obj = &simpleStruct2{"Hello There"};
+	simpleInterface2Obj.aFunc();
+	describeSimpleInterface2(simpleInterface2Obj);
+
+	//nil interface value
+	var emptyInterface TryEmptyInterface;
+	if(emptyInterface == nil){
+		fmt.Println("emptyInterface is empty :)");
+	}
+
+	var interface1 interface{};
+	retrieveGenericObj(interface1);
+
+	interface1 = 100;
+	retrieveGenericObj(interface1);
+
+	interface1 = "hello";
+	retrieveGenericObj(interface1);
+
+	tryTypeAssertions();
+	fmt.Println("================================");
+}
+
+type SimplePerson struct{
+	Name string;
+	Age int;
+}
+func (sp SimplePerson)String()string{
+	return fmt.Sprintf("%v (%v Years)",sp.Name,sp.Age);
+}
+
+//custom error :sweat_smile:
+type MyError struct{
+	When time.Time;
+	What string;
+}
+func(e *MyError)Error()string{
+	return fmt.Sprintf("at %v %s", e.When,e.What);
+}
+
+
+func tryTypeAssertions(){
+	//type assertions
+	var localStringInterface interface{} = "Hello";
+
+	localString1 := localStringInterface.(string);		//assert the type of variable
+	fmt.Println(localString1);
+
+	localString2 , ok := localStringInterface.(string);
+	fmt.Println(localString2,ok);
+
+	//NOTE : we need the **ok** variable , to suspend panic runtime error , because
+	//       If localString3 does not hold a T, the statement will trigger a panic.
+	localString3, ok := localStringInterface.(float64);
+	fmt.Println(localString3,ok);
+
+	do := func(i interface{}){
+		//NOTE : type switch is a construct that permits several type assertions in series.
+		switch v := i.(type){
+		case int:
+			fmt.Printf("Twice %v is %v\n",v, v*2);
+			break;
+		case string:
+			fmt.Printf("%q is %v bytes long\n",v,len(v));
+			break;
+		default:
+			fmt.Printf("I don't know the type : %T\n",v);
+		}
+	}
+
+	do("10");
+	do(10);
+	do(true);
+
+	//try stringer method
+	simplePerson1 := SimplePerson{"Andrew",25};
+	simplePerson2 := SimplePerson{"Rush Skyes",18};
+	fmt.Println("simple persons value :", simplePerson1.String(),simplePerson2.String());
+
+	//try error interface
+
+}
+
+//why we need empty inteface ? , because empty interface is used for
+func retrieveGenericObj(i interface{}){
+	fmt.Printf("can retrieve generic interface : %v %T\n",i,i);
+}
+
 func main() {
 	testDeclaringVariable();
 	testFlowControl();
 	testComplexDataType();
+	testMethodAndInterfaces();
 	fmt.Println("My Favourite number is : ", rand.Intn(10))
 	fmt.Printf("Hello World\n");
 	fmt.Println("Math.Pi number : ",math.Pi);
