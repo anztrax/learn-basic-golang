@@ -7,6 +7,8 @@ import "math/cmplx"
 import "runtime"
 import "time"
 import "strings"
+import "io";
+import "image";
 
 //this is function in go
 func add(x int,y int) int{
@@ -613,7 +615,6 @@ func(e *MyError)Error()string{
 	return fmt.Sprintf("at %v %s", e.When,e.What);
 }
 
-
 func tryTypeAssertions(){
 	//type assertions
 	var localStringInterface interface{} = "Hello";
@@ -662,6 +663,24 @@ func tryTypeAssertions(){
 	if err :=runErrorExample(); err != nil{
 		fmt.Println(err);
 	}
+
+	//readers
+	fmt.Println("==================================");
+	reader := strings.NewReader("Hello , Reader!");
+	aByte := make([]byte,8);
+	for{
+		n, err := reader.Read(aByte);
+		fmt.Printf("n = %v err = %v  aByte = %v\n",n,err,aByte);
+		fmt.Printf("aByte[:n] = %q\n",aByte[:n]);
+		if err == io.EOF{
+			break;
+		}
+	}
+	fmt.Println("==================================");
+
+	anImage := image.NewRGBA(image.Rect(0,0,100,100));
+	fmt.Println(anImage.Bounds());
+	fmt.Println(anImage.At(0,0).RGBA());
 }
 
 //why we need empty inteface ? , because empty interface is used for
