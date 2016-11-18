@@ -688,11 +688,56 @@ func retrieveGenericObj(i interface{}){
 	fmt.Printf("can retrieve generic interface : %v %T\n",i,i);
 }
 
+func testgoRoutineAndChannels(){
+	fmt.Println("Test Go Routing and Channels\n ================================");
+	say := func(aString string){
+		for i :=0; i < 5; i++{
+			time.Sleep(100 * time.Millisecond);
+			fmt.Println(aString);
+		}
+	}
+	//A goroutine is a lightweight thread managed by the Go runtime.
+	go say("world");
+	say("there");
+	go say("hello");
+
+	//test channels
+	sum := func(s []int, c chan int){
+		sumVal := 0;
+		for _, v := range s{
+			sumVal += v;
+		}
+		c <- sumVal // send sumVal to c
+	}
+
+	//NOTE : channel synchronize and communication in the single operation (fundamental idea)
+	channelAndGoRoutineExample := func(){
+		arrayOfInt := []int{1,2,3,4,5,6};
+		channel := make(chan int);
+		go sum(arrayOfInt[:len(arrayOfInt)/2],channel);
+		go sum(arrayOfInt[len(arrayOfInt)/2:],channel);
+		x, y := <-channel , <-channel; //receive from channel
+		fmt.Println(x, y , x + y);
+	}
+	channelAndGoRoutineExample();
+
+	tryBufferedChannel := func(){
+		ch := make(chan int,2);
+		ch <- 1;
+		ch <- 2;
+		fmt.Println("value from buffered channel :",<-ch, <- ch);
+	}
+	tryBufferedChannel();
+
+	fmt.Println("================================");
+}
+
 func main() {
 	testDeclaringVariable();
 	testFlowControl();
 	testComplexDataType();
 	testMethodAndInterfaces();
+	testgoRoutineAndChannels();
 	fmt.Println("My Favourite number is : ", rand.Intn(10))
 	fmt.Printf("Hello World\n");
 	fmt.Println("Math.Pi number : ",math.Pi);
