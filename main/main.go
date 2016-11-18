@@ -653,7 +653,15 @@ func tryTypeAssertions(){
 	fmt.Println("simple persons value :", simplePerson1.String(),simplePerson2.String());
 
 	//try error interface
-
+	runErrorExample := func() error{
+		return &MyError{	//return an instance of MyError
+			time.Now(),
+			"It didn't work",
+		}
+	}
+	if err :=runErrorExample(); err != nil{
+		fmt.Println(err);
+	}
 }
 
 //why we need empty inteface ? , because empty interface is used for
