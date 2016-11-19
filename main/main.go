@@ -858,11 +858,13 @@ func trySomeSimplePatterns(){
 		fanIn := func(input1, input2 <-chan string)<- chan string{
 			c := make(chan string);
 			go func(){
-				select{
-				case s:= <- input1:
-					c <- s;
-				case s:= <- input2:
-					c <- s;
+				for {
+					select {
+					case s := <-input1:
+						c <- s;
+					case s := <-input2:
+						c <- s;
+					}
 				}
 			}();
 			return c;
@@ -901,7 +903,7 @@ func trySomeSimplePatterns(){
 		usage3 := func(){
 			c := fanIn(boring("joe"),boring("sarah"));
 			for i :=0; i < 10;i++{
-				fmt.Println(<- c);
+				fmt.Println(<-c);
 			}
 			fmt.Println("You're both boring, I'm leaving!\n\n");
 		}
@@ -920,7 +922,22 @@ func trySomeSimplePatterns(){
 			}
 			fmt.Println("You're both boring, I'm leaving!\n\n");
 		}
+		usage5 := func(){
+			//time after function return a channel that blocks for the specified duration.
 
+			c := boring("joe");
+			for{
+				select{
+				case s := <- c:
+					fmt.Println(s);
+				case <- time.After(1 * time.Second):		//if after 1 second the channel didn't come return, the for will be terminated
+					fmt.Println("You're too slow.");
+					return;
+				}
+			}
+		}
+
+		usage5();
 		usage1();
 		usage2();
 		usage3();
