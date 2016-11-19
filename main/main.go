@@ -805,8 +805,26 @@ func testgoRoutineAndChannels(){
 			callFibonacciFunc();
 		}
 
+		selectExample3 := func(){
+			tick := time.Tick(100 * time.Millisecond);
+			boom := time.After(500 * time.Millisecond);
+			for{
+				select{
+				case <- tick:
+					fmt.Println("tick .")
+				case <- boom:
+					fmt.Println("BOOM");
+					return;   //NOTE : return statement is terminate all the select cases
+				default:		//NOTE : The default case in a select is run if no other case is ready.
+					fmt.Println("     .");
+					time.Sleep(50 * time.Millisecond);
+				}
+			}
+		}
+
 		selectExample1();
 		selectExample2();
+		selectExample3();
 	}
 	trySelectIngoroutine();
 
@@ -926,7 +944,7 @@ func trySomeSimplePatterns(){
 			//time after function return a channel that blocks for the specified duration.
 
 			c := boring("joe");
-			for{
+			for i:=0;i < 5;i++{
 				select{
 				case s := <- c:
 					fmt.Println(s);
@@ -937,11 +955,28 @@ func trySomeSimplePatterns(){
 			}
 		}
 
-		usage5();
+		//NOTE : this loop will be terminated after 5 second
+		usage6 := func(){
+			c := boring("joe");
+			timeout := time.After(5 * time.Second);
+
+			for{
+				select{
+					case s := <- c:
+						fmt.Println(s);
+					case <- timeout:
+						fmt.Println("You talk too much...\n\n");
+						return;
+				}
+			}
+		}
+
 		usage1();
 		usage2();
 		usage3();
 		restoringSequence();
+		usage5();
+		usage6();
 	}
 
 	//2 = restoring sequence
