@@ -778,15 +778,110 @@ func testgoRoutineAndChannels(){
 		}
 
 		selectExample2 := func(){
-			
+			fibonacci := func(c , quit chan int){
+				x, y := 0,1;
+				for{
+					select{
+					case c <- x:
+						x, y = y, x+y;
+					case <- quit:
+						fmt.Println("quit");
+						return;
+					}
+				}
+			}
+
+			callFibonacciFunc := func(){
+				c := make(chan int);
+				quit := make(chan int);
+				go func(){
+					for i := 0; i < 10;i++{
+						fmt.Println(<- c);
+					}
+					quit <- 0;
+				}();
+				fibonacci(c,quit);
+			}
+			callFibonacciFunc();
 		}
 
 		selectExample1();
+		selectExample2();
 	}
 	trySelectIngoroutine();
 
 
 	fmt.Println("================================");
+}
+
+//bonus section :joy:
+/**
+	Note : https://blog.golang.org/pipelines
+ */
+func trySomeSimplePatterns(){
+	generatorPattern := func(){
+		boring := func(msg string)chan string{
+			c := make(chan string);
+			go func(){
+				for i:=0; ;i++{
+					c <- fmt.Sprintf("%s %d",msg,i);
+					time.Sleep(time.Duration(rand.Intn(1e3)) * time.Millisecond);
+				}
+			}();
+
+			return c;
+		}
+
+		usage1 := func(){
+			c := boring("boring");
+			for i:=0; i < 5;i++{
+				fmt.Printf("You say : %q\n",<-c);
+			}
+			fmt.Println("You're boring : I'm leaving !\n\n");
+		}
+
+		//channels as a handle on a service
+		usage2 := func(){
+			joe := boring("joe");
+			sarah := boring("sarah");
+
+			//NOTE: sync nature of the channel so this process is run, not only when printed but also at executing , syncly but concurrent
+			for i:=0; i < 5;i++{
+				fmt.Println(<- joe);
+				fmt.Println(<- sarah);
+			}
+			fmt.Println("You're both boring , I'm leaving !\n\n");
+		}
+
+		usage3 := func(){
+			//fanin multiplexing
+			// NOTE : why we need fanIn ? : because the nature of the channel is blocking :( ,
+			// 				now Ann and Joe are completely independent, not run in necessarily on sequential order
+			// 				even this is async that can be independently executed
+			fanIn := func(input1, input2 <-chan string)<- chan string{
+				c := make(chan string);
+				go func(){ for { c <- <- input1 }}();
+				go func(){ for { c <- <- input2 }}();
+				return c;
+			}
+
+			usageOfFanIn := func(){
+				c := fanIn(boring("joe"),boring("sarah"));
+				for i :=0; i < 10;i++{
+					fmt.Println(<- c);
+				}
+				fmt.Println("You're both boring, I'm leaving!\n\n");
+			}
+			usageOfFanIn();
+		}
+
+		usage1();
+		usage2();
+		usage3();
+	}
+
+
+	generatorPattern();
 }
 
 func main() {
@@ -795,6 +890,7 @@ func main() {
 	testComplexDataType();
 	testMethodAndInterfaces();
 	testgoRoutineAndChannels();
+	trySomeSimplePatterns();
 	fmt.Println("My Favourite number is : ", rand.Intn(10))
 	fmt.Printf("Hello World\n");
 	fmt.Println("Math.Pi number : ",math.Pi);
