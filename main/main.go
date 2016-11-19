@@ -814,13 +814,18 @@ func testgoRoutineAndChannels(){
 	fmt.Println("================================");
 }
 
+type Message struct{
+	str string;
+	wait chan bool;
+}
 //bonus section :joy:
 /**
 	Note : https://blog.golang.org/pipelines
  */
 func trySomeSimplePatterns(){
+	//1 = generator pattern
 	generatorPattern := func(){
-		boring := func(msg string)chan string{
+		boring := func(msg string)<-chan string{
 			c := make(chan string);
 			go func(){
 				for i:=0; ;i++{
@@ -829,6 +834,40 @@ func trySomeSimplePatterns(){
 				}
 			}();
 
+			return c;
+		}
+		boringWithMessage := func(msg string)<- chan Message{
+			c := make(chan Message);
+			waitForIt := make(chan bool);
+
+			go func(){
+				for i:=0; ;i++{
+					c <- Message{fmt.Sprintf("%s : %d",msg,i),waitForIt}
+					time.Sleep(time.Duration(rand.Intn(1e3)) * time.Millisecond);
+					<-waitForIt;		//this is blocked the operation dude (remember the nature of the channel blocked when they together
+				}
+			}();
+
+			return c;
+		}
+
+		//fanin multiplexing
+		// NOTE : why we need fanIn ? : because the nature of the channel is blocking :( ,
+		// 				now Ann and Joe are completely independent, not run in necessarily on sequential order
+		// 				even this is async that can be independently executed
+		fanIn := func(input1, input2 <-chan string)<- chan string{
+			c := make(chan string);
+			go func(){ for { c <- <- input1 }}();
+			go func(){ for { c <- <- input2 }}();
+			return c;
+		}
+
+		fanInVariadic := func(inputs ... <- chan Message)<-chan Message{
+			c := make(chan Message);
+			for i:= range inputs{
+				input := inputs[i];
+				go func(){ for { c <- <- input }}();
+			}
 			return c;
 		}
 
@@ -854,33 +893,37 @@ func trySomeSimplePatterns(){
 		}
 
 		usage3 := func(){
-			//fanin multiplexing
-			// NOTE : why we need fanIn ? : because the nature of the channel is blocking :( ,
-			// 				now Ann and Joe are completely independent, not run in necessarily on sequential order
-			// 				even this is async that can be independently executed
-			fanIn := func(input1, input2 <-chan string)<- chan string{
-				c := make(chan string);
-				go func(){ for { c <- <- input1 }}();
-				go func(){ for { c <- <- input2 }}();
-				return c;
+			c := fanIn(boring("joe"),boring("sarah"));
+			for i :=0; i < 10;i++{
+				fmt.Println(<- c);
 			}
+			fmt.Println("You're both boring, I'm leaving!\n\n");
+		}
 
-			usageOfFanIn := func(){
-				c := fanIn(boring("joe"),boring("sarah"));
-				for i :=0; i < 10;i++{
-					fmt.Println(<- c);
-				}
-				fmt.Println("You're both boring, I'm leaving!\n\n");
+		//locked up aysnc
+		restoringSequence := func(){
+			c := fanInVariadic(boringWithMessage("joe"),boringWithMessage("Ann"));
+
+			for i:=0;i<5;i++{
+				msg1 := <-c; fmt.Println(msg1.str);
+				msg2 := <-c; fmt.Println(msg2.str);
+				//NOTE : this will be blocked because operation because the Message has channel that hasn't been fullfil yet so
+				//			 that blocked waitForIt;
+				msg1.wait <- false;		//yap : if the channel get the value immediately the process will not be blocked anymore
+				msg2.wait <- false;
 			}
-			usageOfFanIn();
+			fmt.Println("You're both boring, I'm leaving!\n\n");
 		}
 
 		usage1();
 		usage2();
 		usage3();
+		restoringSequence();
 	}
 
+	//2 = restoring sequence
 
+	//call the patterns
 	generatorPattern();
 }
 
