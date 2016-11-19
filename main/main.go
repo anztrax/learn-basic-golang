@@ -721,6 +721,7 @@ func testgoRoutineAndChannels(){
 	}
 	channelAndGoRoutineExample();
 
+	//in go talk 2013, this is more unlikely
 	tryBufferedChannel := func(){
 		ch := make(chan int,2);
 		ch <- 1;
@@ -728,6 +729,62 @@ func testgoRoutineAndChannels(){
 		fmt.Println("value from buffered channel :",<-ch, <- ch);
 	}
 	tryBufferedChannel();
+
+	//NOTE : https://tour.golang.org/concurrency/4
+	tryRangeAndCloseWithRoutine := func(){
+		fibonacci := func(n int,c chan int){
+			x, y := 0, 1;
+			for i := 0; i < n ; i++{
+				c <- x;
+				x, y = y, x+y;
+			}
+			close(c);
+		}
+
+		c := make(chan int,10);	//with buffer 10
+		n := cap(c);	//get channel capacity
+		go fibonacci(n,c);
+		fmt.Println("\nvalue of fibbonaci using golang : ");
+		for i := range c{
+			fmt.Println(i);
+		}
+	}
+	tryRangeAndCloseWithRoutine();
+
+	//try select in goroutine
+	trySelectIngoroutine := func(){
+		selectExample1 := func(){
+			c1 := make(chan string);
+			c2 := make(chan string);
+
+			go func(){
+				time.Sleep(time.Second * 1);
+				c1 <- "one";
+			}();
+			go func(){
+				time.Sleep(time.Second * 2);
+				c2 <- "two";
+			}();
+
+			//using select : We’ll use select to await both of these values simultaneously
+			for i:= 0; i < 2 ;i++{
+				select {
+				case msg1 := <- c1:
+					fmt.Println("received",msg1);
+				case msg2 := <- c2:
+					fmt.Println("received",msg2);
+				}
+			}
+		}
+
+		selectExample2 := func(){
+			
+		}
+
+		selectExample1();
+	}
+	trySelectIngoroutine();
+
 
 	fmt.Println("================================");
 }
