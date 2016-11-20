@@ -9,6 +9,7 @@ import "time"
 import "strings"
 import "io";
 import "image";
+import "sync";
 
 //this is function in go
 func add(x int,y int) int{
@@ -688,6 +689,26 @@ func retrieveGenericObj(i interface{}){
 	fmt.Printf("can retrieve generic interface : %v %T\n",i,i);
 }
 
+type SafeCounter struct{
+	v map[string]int;
+	mux sync.Mutex;
+}
+func(c *SafeCounter)Int(key string){
+	c.mux.Lock();
+	// Lock so only one goroutine at a time can access the map c.v
+	c.v[key]++
+	c.mux.Unlock();
+}
+
+//value returns the current value of the counter for the given key
+func(c *SafeCounter)value(key string)int{
+	c.mux.Lock();
+	//Lock so only one goroutine at a time can access the map c.v.
+	defer c.mux.Unlock();
+	return c.v[key];
+}
+
+
 func testgoRoutineAndChannels(){
 	fmt.Println("Test Go Routing and Channels\n ================================");
 	say := func(aString string){
@@ -822,9 +843,19 @@ func testgoRoutineAndChannels(){
 			}
 		}
 
+		selectExample4 := func(){
+			c := SafeCounter{v: make(map[string]int)}
+			for i :=0; i< 1000;i++{
+				go c.Int("someKey");
+			}
+			time.Sleep(time.Second);
+			fmt.Println(c.value("someKey"));
+		}
+
 		selectExample1();
 		selectExample2();
 		selectExample3();
+		selectExample4();
 	}
 	trySelectIngoroutine();
 
